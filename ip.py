@@ -16,18 +16,16 @@ special_networks = [
     ("Prywatny (RFC1918)", lambda ip: ip.is_private),
 ]
 
-
-def validate_netmask(mask):  # Sprawdzenie poprawności maski sieci
+def validate_netmask(mask): #Sprawdzenie poprawności maski sieci
     try:
         network = ipaddress.IPv4Network(f"0.0.0.0/{mask}", strict=False)
         return network.prefixlen
     except ValueError:
         raise ValueError(f"Nieprawidłowa maska sieci: {mask}")
 
-
-def parse_ip_and_mask(ip, mask=None):  # Sprawdzenie, czy podano CIDR lub maskę dziesiętną
+def parse_ip_and_mask(ip, mask=None): #Sprawdzenie, czy podano CIDR lub maskę dziesiętną
     try:
-        # Jeśli maska zaczyna się od "/", traktujemy ją jako CIDR
+        #Jeśli maska zaczyna się od "/", traktujemy ją jako CIDR
         if mask and mask.startswith("/"):
             prefixlen = int(mask[1:])
             if ":" in ip and not (0 <= prefixlen <= 128):  # IPv6
@@ -36,15 +34,15 @@ def parse_ip_and_mask(ip, mask=None):  # Sprawdzenie, czy podano CIDR lub maskę
                 raise ValueError(f"Nieprawidłowa wartość prefiksu IPv4: {prefixlen}")
             return ipaddress.ip_interface(f"{ip}/{prefixlen}")
 
-        # Jeśli podano jeden parametr, sprawdzamy, czy jest w formacie CIDR
+        #Jeśli podano jeden parametr, sprawdzamy, czy jest w formacie CIDR
         if mask is None:
             if "/" in ip:
-                ip = ip.replace(" ", "")  # Usunięcie potencjalnych spacji przed CIDR
+                ip = ip.replace(" ", "")  #Usunięcie potencjalnych spacji przed CIDR
                 return ipaddress.ip_interface(ip)
             else:
                 raise ValueError("Brak CIDR lub maski dziesiętnej.")
 
-        # Jeśli podano maskę dziesiętną, konwersja jej na prefix
+        #Jeśli podano maskę dziesiętną, konwersja jej na prefix
         prefixlen = validate_netmask(mask)
         return ipaddress.ip_interface(f"{ip}/{prefixlen}")
 
@@ -52,10 +50,10 @@ def parse_ip_and_mask(ip, mask=None):  # Sprawdzenie, czy podano CIDR lub maskę
         raise ValueError(f"Błąd w przetwarzaniu adresu: {e}")
 
 
-def check_special_address(ip_obj):  # Sprawdzenie, czy adres należy do specjalnych kategorii
+def check_special_address(ip_obj): #Sprawdzenie, czy adres należy do specjalnych kategorii
     ip = ip_obj.ip
 
-    # Iteracja przez sieci i zwracanie dopasowanej kategorii
+    #Dopasowanie kategorii sieci
     for category, condition in special_networks:
         if condition(ip):
             return category
@@ -63,8 +61,7 @@ def check_special_address(ip_obj):  # Sprawdzenie, czy adres należy do specjaln
     return "Brak specjalnej kategorii"
 
 
-def ip_info(ip_obj):
-    """Wyświetla szczegółowe informacje o adresie IP."""
+def ip_info(ip_obj): #Wyświetlenie informacji o podanym adresie IP
     ip_version = ip_obj.version
     ip_address = ip_obj.ip
     network_address = ip_obj.network.network_address
@@ -88,19 +85,17 @@ def ip_info(ip_obj):
 
 def main():
     parser = argparse.ArgumentParser(description="Podręczne narzędzie sieciowe.")
-    parser.add_argument("ip",
-                        help="Adres IP w formacie CIDR (np. 192.168.1.1/24) lub adres z maską dziesiętną (np. 192.168.1.1 255.255.255.0).",
-                        nargs='+')
+    parser.add_argument("ip", help="Adres IP w formacie CIDR (np. 192.168.1.1/24) lub adres z maską dziesiętną (np. 192.168.1.1 255.255.255.0).", nargs='+')
     parser.add_argument("-n", "--network", help="Adres podsieci do sprawdzenia przynależności IP.")
 
     args = parser.parse_args()
 
     try:
-        # Rozpoznanie formatu wejściowego
+        #Rozpoznanie formatu wejściowego
         if len(args.ip) == 1:
-            ip_obj = parse_ip_and_mask(args.ip[0])  # CIDR
+            ip_obj = parse_ip_and_mask(args.ip[0])  #CIDR
         elif len(args.ip) == 2:
-            ip_obj = parse_ip_and_mask(args.ip[0], args.ip[1])  # IP + maska dziesiętna lub CIDR z odstępem
+            ip_obj = parse_ip_and_mask(args.ip[0], args.ip[1])  #IP + maska dziesiętna lub CIDR z odstępem
         else:
             raise ValueError("Nieprawidłowy format wejściowy. Podaj adres w formacie CIDR lub z maską dziesiętną.")
 
