@@ -16,6 +16,18 @@ special_networks = [
     ("Prywatny (RFC1918)", lambda ip: ip.is_private),
 ]
 
+# Predefiniowane kolory
+COLORS = {
+    "header": "\033[1;92m",   # Cyan pogrubiony
+    "key": "\033[1;36m",      # Pomarańczowy pogrubiony
+    "reset": "\033[0m"
+}
+
+# Funkcja formatująca tekst wyjściowy
+def format_text(text, color="reset"):
+    return f"{COLORS[color]}{text}{COLORS['reset']}"
+
+
 
 def validate_netmask(mask):  # Sprawdzenie poprawności maski sieci
     try:
@@ -88,17 +100,17 @@ def ip_info(ip_obj):  # Wyświetlenie informacji o podanym adresie IP
     hex_representation = hex(int(ip_address)) if ip_version == 4 else ip_address.exploded
 
     # Wyświetlenie informacji
-    print(f"=== Informacje o adresie {ip_address} ===")
-    print(f"Typ adresu: IPv{ip_version}")
-    print(f"Adres sieci: {network_address}")
-    print(f"Maska sieci: {netmask}")
-    print(f"Adres rozgłoszeniowy: {broadcast_address}")
-    print(f"Liczba hostów w sieci: {num_hosts}")
-    print(f"Liczba adresów w sieci: {num_addresses}")
-    print(f"Reprezentacja binarna: {''.join(f'{int(octet):08b}' for octet in ip_address.packed)}")
-    print(f"Reprezentacja szesnastkowa: {hex_representation}")
-    print(f"Kategoria adresu: {check_special_address(ip_obj)}")
-    print("===============================")
+    print(format_text(f"=== Informacje o adresie {ip_address} ===", "header"))
+    print(f"{format_text('Typ adresu: ', 'key')} IPv{ip_version}")
+    print(f"{format_text('Maska sieci: ', 'key')} {netmask}")
+    print(f"{format_text('Adres sieci: ', 'key')} {network_address}")
+    print(f"{format_text('Adres rozgłoszeniowy: ', 'key')} {broadcast_address}")
+    print(f"{format_text('Liczba hostów w sieci: ', 'key')} {num_hosts}")
+    print(f"{format_text('Liczba adresów w sieci: ', 'key')} {num_addresses}")
+    print(f"{format_text('Reprezentacja binarna: ', 'key')} {''.join(f'{int(octet):08b}' for octet in ip_address.packed)}")
+    print(f"{format_text('Reprezentacja szesnastkowa: ', 'key')} {hex_representation}")
+    print(f"{format_text('Kategoria adresu: ', 'key')} {check_special_address(ip_obj)}")
+    print(format_text("===============================", "header"))
 
 
 
