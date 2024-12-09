@@ -73,7 +73,6 @@ def convert_to_cidr(network_str): # Konwersja IP + maska dziesiętna na CIDR
         raise ValueError(f"Nieprawidłowa sieć lub maska: {network_str}")
 
 
-
 def parse_ip_and_mask(ip, mask=None): # Sprawdzenie formatu IP z obsługą klas IPv4 i adresów prywatnych
     try:
         if mask and mask.startswith("/"):  # Gdy podano CIDR po spacji
@@ -164,12 +163,46 @@ def ip_info(ip_obj, ip_class, is_private):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Podręczne narzędzie sieciowe.")
-    parser.add_argument("ip",
-                        help="Adres IP w formacie CIDR (np. 192.168.1.1/24) lub adres z maską dziesiętną (np. 192.168.1.1 255.255.255.0).",
-                        nargs='+')
-    parser.add_argument("-n", "--network", nargs="+", metavar=("IP", "MASK"),
-                        help="Adres sieci w formacie CIDR (np. 192.168.1.0/24) lub IP + maska dziesiętna (np. 192.168.1.0 255.255.255.0).")
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description=(
+            "Podręczne narzędzie sieciowe - sprawdzanie adresów IP i przynależności do sieci.\n"
+            "Użycie: <ADRES IP SPRAWDZANY> <ADRES DOCELOWY/CIDR> lub <ADRES DOCELOWY> <MASKA>"
+        ),
+        formatter_class=argparse.RawTextHelpFormatter
+    )
+
+    # Argument IP
+    parser.add_argument(
+        "ip",
+        help=(
+            "Adres IP w jednym z formatów:\n"
+            "  • CIDR:                  192.168.1.1/24\n"
+            "  • IP + maska dziesiętna: 192.168.1.1 255.255.255.0"
+        ),
+        nargs='+'
+    )
+
+    # Argument -n / --network
+    parser.add_argument(
+        "-n", "--network",
+        nargs="+",
+        metavar=("ADRES", "MASKA"),
+        help=(
+            "Sprawdź przynależność podanego adresu IP do danej sieci:\n"
+            "\n"
+            "Sieć docelową można określić za pomocą:\n"
+            "  • CIDR:               192.168.1.0/24\n"
+            "  • ADRES + MASKA:      192.168.1.0 255.255.255.0\n"
+            "\n"
+            "Przykłady użycia:\n"
+            "  python ip.py 192.168.1.100 -n 192.168.1.0/24\n"
+            "  python ip.py 192.168.1.100 -n 192.168.1.0 255.255.255.0\n"
+            "\n"
+            "Jeśli adres sieci jest nieprawidłowy, zgłoszony zostanie błąd."
+        )
+    )
 
     args = parser.parse_args()
     args.ip = [ip.strip() for ip in args.ip]
