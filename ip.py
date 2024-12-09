@@ -73,33 +73,32 @@ def convert_to_cidr(network_str): # Konwersja IP + maska dziesiętna na CIDR
         raise ValueError(f"Nieprawidłowa sieć lub maska: {network_str}")
 
 
-def parse_ip_and_mask(ip, mask=None): # Sprawdzenie formatu IP z obsługą klas IPv4 i adresów prywatnych
+def parse_ip_and_mask(ip, mask=None):
     try:
-        if mask and mask.startswith("/"):  # Gdy podano CIDR po spacji
+        if mask and mask.startswith("/"):  # CIDR po spacji
             prefixlen = int(mask[1:])
             ip_obj = ipaddress.ip_interface(f"{ip}/{prefixlen}")
-            ip_class = "CIDR"
+            ip_class = "Brak specjalnej kategorii"
             is_private = ip_obj.ip.is_private
             return ip_obj, ip_class, is_private
 
         if mask is None:
-            if "/" in ip:  # Gdy podano CIDR bez spacji
-                ip = ip.replace(" ", "")
-                ip_obj = ipaddress.ip_interface(ip)
-                ip_class = "CIDR"
+            if "/" in ip:  # CIDR bez spacji
+                ip_obj = ipaddress.ip_interface(ip.replace(" ", ""))
+                ip_class = "Brak specjalnej kategorii"
                 is_private = ip_obj.ip.is_private
                 return ip_obj, ip_class, is_private
-            elif ":" not in ip:  # Gdy podano IPv4 (podejście klasowe)
+            elif ":" not in ip:  # IPv4 bez maski
                 mask, ip_class, is_private = get_classful_mask(ip)
                 ip_obj = ipaddress.ip_interface(f"{ip}/{mask}")
                 return ip_obj, ip_class, is_private
             else:
-                raise ValueError("Adres IPv6 wymaga prefiksu CIDR(np. 2001:db8::1/64).") # Gdy podano IPv6 bez prefiksu CIDR
+                raise ValueError("Adres IPv6 wymaga prefiksu CIDR(np. 2001:db8::1/64).")
 
-        # Jeśli podano maskę dziesiętną, konwersja na prefiks CIDR
+        # Obsługa maski dziesiętnej
         prefixlen = validate_netmask(mask)
         ip_obj = ipaddress.ip_interface(f"{ip}/{prefixlen}")
-        ip_class = "CIDR"
+        ip_class = "Brak specjalnej kategorii"
         is_private = ip_obj.ip.is_private
         return ip_obj, ip_class, is_private
 
