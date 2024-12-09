@@ -101,18 +101,25 @@ def ip_info(ip_obj):  # Wyświetlenie informacji o podanym adresie IP
 
     # Wyświetlenie informacji
     print(format_text(f"=== Informacje o adresie {ip_address} ===", "header"))
-    print(f"{format_text('Typ adresu: ', 'key')} IPv{ip_version}")
-    print(f"{format_text('Maska sieci: ', 'key')} {netmask}")
-    print(f"{format_text('Adres sieci: ', 'key')} {network_address}")
-    print(f"{format_text('Adres rozgłoszeniowy: ', 'key')} {broadcast_address}")
-    print(f"{format_text('Liczba hostów w sieci: ', 'key')} {num_hosts}")
-    print(f"{format_text('Liczba adresów w sieci: ', 'key')} {num_addresses}")
-    print(f"{format_text('Reprezentacja binarna: ', 'key')} {''.join(f'{int(octet):08b}' for octet in ip_address.packed)}")
-    print(f"{format_text('Reprezentacja szesnastkowa: ', 'key')} {hex_representation}")
-    print(f"{format_text('Kategoria adresu: ', 'key')} {check_special_address(ip_obj)}")
+
+    # Tworzenie wyjścia jako lista krotek (klucz, wartość)
+    info_list = [
+        ("Typ adresu:", f"IPv{ip_version}"),
+        ("Maska sieci:", netmask),
+        ("Adres sieci:", network_address),
+        ("Adres rozgłoszeniowy:", broadcast_address),
+        ("Liczba hostów w sieci:", num_hosts),
+        ("Liczba adresów w sieci:", num_addresses),
+        ("Reprezentacja binarna:", ''.join(f'{int(octet):08b}' for octet in ip_address.packed)),
+        ("Reprezentacja szesnastkowa:", hex_representation),
+        ("Kategoria adresu:", check_special_address(ip_obj)),
+    ]
+
+    # Wydrukowane jako wyrównane w pionie
+    for key, value in info_list:
+        print(f"{format_text(key.ljust(25), 'key')} {value}")
+
     print(format_text("===============================", "header"))
-
-
 
 
 def main():
