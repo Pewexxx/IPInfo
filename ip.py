@@ -66,22 +66,28 @@ def check_special_address(ip_obj):  # Sprawdzenie, czy adres należy do specjaln
 def ip_info(ip_obj):  # Wyświetlenie informacji o podanym adresie IP
     ip_version = ip_obj.version
     ip_address = ip_obj.ip
-    network_address = ip_obj.network.network_address
+
+    # Prefiks sieci
     netmask = str(ip_obj.network.netmask) if ip_version == 4 else f"/{ip_obj.network.prefixlen}"
-    broadcast_address = ip_obj.network.broadcast_address if ip_version == 4 else "N/A"
 
-    # Obliczenie liczby hostów
+    # Obsługa adresu sieci i rozgłoszeniowego
+    network_address = ip_obj.network.network_address if ip_version == 4 else "N/A [IPv6]"
+    broadcast_address = ip_obj.network.broadcast_address if ip_version == 4 else "N/A [IPv6]"
+
+    # Liczba hostów
     if ip_obj.network.prefixlen == ip_obj.network.max_prefixlen:
-        num_hosts = "N/A"  # Dla /32 lub /128 brak dostępnych hostów
+        num_hosts = "N/A"  # Prefiks pełny - brak hostów
     else:
+        # IPv4: odjęcie adresu sieci i broadcast
         num_hosts = ip_obj.network.num_addresses - (2 if ip_version == 4 else 0)
-
-    # Reprezentacja szesnastkowa
-    hex_representation = hex(int(ip_address)) if ip_version == 4 else ip_address.exploded
 
     # Liczba adresów w sieci
     num_addresses = ip_obj.network.num_addresses
 
+    # Reprezentacja szesnastkowa dla IPv4/IPv6
+    hex_representation = hex(int(ip_address)) if ip_version == 4 else ip_address.exploded
+
+    # Wyświetlenie informacji
     print(f"=== Informacje o adresie {ip_address} ===")
     print(f"Typ adresu: IPv{ip_version}")
     print(f"Adres sieci: {network_address}")
@@ -92,7 +98,9 @@ def ip_info(ip_obj):  # Wyświetlenie informacji o podanym adresie IP
     print(f"Reprezentacja binarna: {''.join(f'{int(octet):08b}' for octet in ip_address.packed)}")
     print(f"Reprezentacja szesnastkowa: {hex_representation}")
     print(f"Kategoria adresu: {check_special_address(ip_obj)}")
-    print(f"===============================")
+    print("===============================")
+
+
 
 
 def main():
