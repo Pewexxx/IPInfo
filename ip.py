@@ -186,7 +186,15 @@ def main():
         # Sprawdzanie przynależności do sieci
         if args.network:
             try:
+                # Obsługa CIDR lub maski dziesiętnej
+                if " " in args.network:
+                    network_cidr = convert_to_cidr(args.network)
+                else:
+                    network_cidr = args.network
+
+                # Sprawdzenie przynależności do sieci
                 network = ipaddress.ip_network(args.network, strict=False)
+
                 if ip_obj.ip in network:
                     print("Adres IP " +
                           format_text(f"{ip_obj.ip} ", "accent") +
