@@ -103,6 +103,7 @@ def main():
     parser.add_argument("-n", "--network", help="Adres podsieci do sprawdzenia przynależności IP.")
 
     args = parser.parse_args()
+    args.ip = [ip.strip() for ip in args.ip]
 
     try:
         # Rozpoznanie formatu wejściowego
@@ -112,6 +113,16 @@ def main():
             ip_obj = parse_ip_and_mask(args.ip[0], args.ip[1])  # IP + maska dziesiętna lub CIDR z odstępem
         else:
             raise ValueError("Nieprawidłowy format wejściowy. Podaj adres w formacie CIDR lub z maską dziesiętną.")
+
+        if args.network:
+            try:
+                network = ipaddress.ip_network(args.network, strict=False)
+                if ip_obj.ip in network:
+                    print(f"Adres IP {ip_obj.ip} należy do sieci {network}")
+                else:
+                    print(f"Adres IP {ip_obj.ip} NIE należy do sieci {network}")
+            except ValueError:
+                print(f"Nieprawidłowa sieć: {args.network}")
 
         ip_info(ip_obj)
 
