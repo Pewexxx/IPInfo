@@ -23,10 +23,36 @@ COLORS = {
     "reset": "\033[0m"
 }
 
+
 # Funkcja formatująca tekst wyjściowy
 def format_text(text, color="reset"):
     return f"{COLORS[color]}{text}{COLORS['reset']}"
 
+
+def get_classful_mask(ip):
+    """Zwraca domyślną maskę sieci i klasę adresu."""
+    first_octet = int(ip.split('.')[0])
+
+    if 1 <= first_octet <= 127:   # Klasa A
+        is_private = ipaddress.IPv4Address(ip).is_private
+        return "255.0.0.0", "Klasa A", is_private
+
+    elif 128 <= first_octet <= 191:  # Klasa B
+        is_private = ipaddress.IPv4Address(ip).is_private
+        return "255.255.0.0", "Klasa B", is_private
+
+    elif 192 <= first_octet <= 223:  # Klasa C
+        is_private = ipaddress.IPv4Address(ip).is_private
+        return "255.255.255.0", "Klasa C", is_private
+
+    elif 224 <= first_octet <= 239:  # Klasa D (Multicast)
+        return None, "Klasa D (Multicast - Brak maski)", False
+
+    elif 240 <= first_octet <= 255:  # Klasa E (Eksperymentalne)
+        return None, "Klasa E (Zarezerwowana - Brak maski)", False
+
+    else:
+        raise ValueError(f"Adres IP {ip} nie należy do standardowych klas.")
 
 
 def validate_netmask(mask):  # Sprawdzenie poprawności maski sieci
@@ -37,28 +63,35 @@ def validate_netmask(mask):  # Sprawdzenie poprawności maski sieci
         raise ValueError(f"Nieprawidłowa maska sieci: {mask}")
 
 
-def parse_ip_and_mask(ip, mask=None):  # Sprawdzenie, czy podano CIDR lub maskę dziesiętną
+def parse_ip_and_mask(ip, mask=None): # Sprawdzenie formatu IP z obsługą klas IPv4 i adresów prywatnych
     try:
-        # Jeśli maska zaczyna się od "/", traktujemy ją jako CIDR
-        if mask and mask.startswith("/"):
+        if mask and mask.startswith("/"):  # Gdy podano CIDR po spacji
             prefixlen = int(mask[1:])
-            if ":" in ip and not (0 <= prefixlen <= 128):  # IPv6
-                raise ValueError(f"Nieprawidłowa wartość prefiksu IPv6: {prefixlen}")
-            elif "." in ip and not (0 <= prefixlen <= 32):  # IPv4
-                raise ValueError(f"Nieprawidłowa wartość prefiksu IPv4: {prefixlen}")
-            return ipaddress.ip_interface(f"{ip}/{prefixlen}")
+            ip_obj = ipaddress.ip_interface(f"{ip}/{prefixlen}")
+            ip_class = "CIDR"
+            is_private = ip_obj.ip.is_private
+            return ip_obj, ip_class, is_private
 
-        # Jeśli podano jeden parametr, sprawdzamy, czy jest w formacie CIDR
         if mask is None:
-            if "/" in ip:
-                ip = ip.replace(" ", "")  # Usunięcie potencjalnych spacji przed CIDR
-                return ipaddress.ip_interface(ip)
+            if "/" in ip:  # Gdy podano CIDR bez spacji
+                ip = ip.replace(" ", "")
+                ip_obj = ipaddress.ip_interface(ip)
+                ip_class = "CIDR"
+                is_private = ip_obj.ip.is_private
+                return ip_obj, ip_class, is_private
+            elif ":" not in ip:  # Gdy podano IPv4 (podejście klasowe)
+                mask, ip_class, is_private = get_classful_mask(ip)
+                ip_obj = ipaddress.ip_interface(f"{ip}/{mask}")
+                return ip_obj, ip_class, is_private
             else:
-                raise ValueError("Brak CIDR lub maski dziesiętnej.")
+                raise ValueError("Adres IPv6 wymaga prefiksu CIDR.") # Gdy podano IPv6
 
-        # Jeśli podano maskę dziesiętną, konwersja jej na prefix
+        # Jeśli podano maskę dziesiętną, konwersja na prefiks CIDR
         prefixlen = validate_netmask(mask)
-        return ipaddress.ip_interface(f"{ip}/{prefixlen}")
+        ip_obj = ipaddress.ip_interface(f"{ip}/{prefixlen}")
+        ip_class = "CIDR"
+        is_private = ip_obj.ip.is_private
+        return ip_obj, ip_class, is_private
 
     except ValueError as e:
         raise ValueError(f"Błąd w przetwarzaniu adresu: {e}")
@@ -75,35 +108,29 @@ def check_special_address(ip_obj):  # Sprawdzenie, czy adres należy do specjaln
     return "Brak specjalnej kategorii"
 
 
-def ip_info(ip_obj):  # Wyświetlenie informacji o podanym adresie IP
+def ip_info(ip_obj, ip_class, is_private):
     ip_version = ip_obj.version
     ip_address = ip_obj.ip
 
-    # Prefiks sieci
     netmask = str(ip_obj.network.netmask) if ip_version == 4 else f"/{ip_obj.network.prefixlen}"
-
-    # Obsługa adresu sieci i rozgłoszeniowego
     network_address = ip_obj.network.network_address if ip_version == 4 else "N/A [IPv6]"
     broadcast_address = ip_obj.network.broadcast_address if ip_version == 4 else "N/A [IPv6]"
 
-    # Liczba hostów
     if ip_obj.network.prefixlen == ip_obj.network.max_prefixlen:
-        num_hosts = "N/A"  # Prefiks pełny - brak hostów
+        num_hosts = "N/A"
     else:
-        # IPv4: odjęcie adresu sieci i broadcast
         num_hosts = ip_obj.network.num_addresses - (2 if ip_version == 4 else 0)
 
-    # Liczba adresów w sieci
     num_addresses = ip_obj.network.num_addresses
-
-    # Reprezentacja szesnastkowa dla IPv4/IPv6
     hex_representation = hex(int(ip_address)) if ip_version == 4 else ip_address.exploded
 
-    # Wyświetlenie informacji
+    private_status = "Tak" if is_private else "Nie"
+
     print(format_text(f"============ Informacje o adresie {ip_address} ============", "header"))
 
-    # Tworzenie wyjścia jako lista krotek (klucz, wartość)
     info_list = [
+        ("Klasa adresu:", ip_class),
+        ("Adres prywatny:", private_status),
         ("Typ adresu:", f"IPv{ip_version}"),
         ("Maska sieci:", netmask),
         ("Adres sieci:", network_address),
@@ -115,9 +142,8 @@ def ip_info(ip_obj):  # Wyświetlenie informacji o podanym adresie IP
         ("Kategoria adresu:", check_special_address(ip_obj)),
     ]
 
-    # Wydrukowane jako wyrównane w pionie
     for key, value in info_list:
-        print(f"{format_text(key.ljust(25), 'key')} {value}")
+        print(f"{format_text(key.ljust(27), 'key')} {value}")
 
     print(format_text("==========================================================", "header"))
 
@@ -135,12 +161,13 @@ def main():
     try:
         # Rozpoznanie formatu wejściowego
         if len(args.ip) == 1:
-            ip_obj = parse_ip_and_mask(args.ip[0])  # CIDR
+            ip_obj, ip_class, is_private = parse_ip_and_mask(args.ip[0])  # CIDR lub classful
         elif len(args.ip) == 2:
-            ip_obj = parse_ip_and_mask(args.ip[0], args.ip[1])  # IP + maska dziesiętna lub CIDR z odstępem
+            ip_obj, ip_class, is_private = parse_ip_and_mask(args.ip[0], args.ip[1])  # IP + maska dziesiętna
         else:
             raise ValueError("Nieprawidłowy format wejściowy. Podaj adres w formacie CIDR lub z maską dziesiętną.")
 
+        # Sprawdzanie przynależności do sieci
         if args.network:
             try:
                 network = ipaddress.ip_network(args.network, strict=False)
@@ -151,7 +178,8 @@ def main():
             except ValueError:
                 print(f"Nieprawidłowa sieć: {args.network}")
 
-        ip_info(ip_obj)
+        # Wyświetlenie informacji
+        ip_info(ip_obj, ip_class, is_private)
 
     except ValueError as e:
         print(f"Błąd: {e}")
