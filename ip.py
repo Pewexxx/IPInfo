@@ -100,7 +100,7 @@ def ip_info(ip_obj):  # Wyświetlenie informacji o podanym adresie IP
     hex_representation = hex(int(ip_address)) if ip_version == 4 else ip_address.exploded
 
     # Wyświetlenie informacji
-    print(format_text(f"=== Informacje o adresie {ip_address} ===", "header"))
+    print(format_text(f"============ Informacje o adresie {ip_address} ============", "header"))
 
     # Tworzenie wyjścia jako lista krotek (klucz, wartość)
     info_list = [
@@ -119,7 +119,7 @@ def ip_info(ip_obj):  # Wyświetlenie informacji o podanym adresie IP
     for key, value in info_list:
         print(f"{format_text(key.ljust(25), 'key')} {value}")
 
-    print(format_text("===============================", "header"))
+    print(format_text("==========================================================", "header"))
 
 
 def main():
