@@ -18,8 +18,10 @@ special_networks = [
 
 # Predefiniowane kolory
 COLORS = {
-    "header": "\033[1;92m",   # Cyan pogrubiony
-    "key": "\033[1;36m",      # Pomarańczowy pogrubiony
+    "header": "\033[1;92m",   # Zielony pogrubiony
+    "key": "\033[1;96m",      # Cyan pogrubiony
+    "accent": "\033[1;93m",   # Żółty pogrubiony
+    "error": "\033[1;91m",    # Czerwony pogrubiony
     "reset": "\033[0m"
 }
 
@@ -176,14 +178,22 @@ def main():
             try:
                 network = ipaddress.ip_network(args.network, strict=False)
                 if ip_obj.ip in network:
-                    print(f"Adres IP {ip_obj.ip} należy do sieci {network}")
+                    print("Adres IP " +
+                          format_text(f"{ip_obj.ip} ", "accent") +
+                          format_text("należy", "header") +
+                          " do sieci " +
+                          format_text(f"{network}", "accent"))
                 else:
-                    print(f"Adres IP {ip_obj.ip} NIE należy do sieci {network}")
+                    print("Adres IP " +
+                          format_text(f"{ip_obj.ip} ", "accent") +
+                          format_text("NIE należy", "error") +
+                          " do sieci " +
+                          format_text(f"{network}", "accent"))
             except ValueError:
-                print(f"Nieprawidłowa sieć: {args.network}")
+                print(format_text(f"Nieprawidłowa sieć: {args.network}", "error"))
 
-        # Wyświetlenie informacji
-        ip_info(ip_obj, ip_class, is_private)
+        else:
+            ip_info(ip_obj, ip_class, is_private)  # Wyświetlenie informacji o adresie IP
 
     except ValueError as e:
         print(f"Błąd: {e}")
