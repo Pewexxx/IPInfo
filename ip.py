@@ -65,6 +65,16 @@ def validate_netmask(mask):  # Sprawdzenie poprawności maski sieci
         raise ValueError(f"Nieprawidłowa maska sieci: {mask}")
 
 
+def convert_to_cidr(network_str):
+    """Konwertuje maskę dziesiętną na CIDR."""
+    try:
+        ip, mask = network_str.split()
+        prefixlen = validate_netmask(mask)
+        return f"{ip}/{prefixlen}"
+    except (ValueError, IndexError):
+        raise ValueError(f"Nieprawidłowa sieć lub maska: {network_str}")
+
+
 def parse_ip_and_mask(ip, mask=None): # Sprawdzenie formatu IP z obsługą klas IPv4 i adresów prywatnych
     try:
         if mask and mask.startswith("/"):  # Gdy podano CIDR po spacji
