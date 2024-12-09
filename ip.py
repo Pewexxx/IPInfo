@@ -18,14 +18,15 @@ special_networks = [
 
 # Predefiniowane kolory
 COLORS = {
-    "header": "\033[1;92m",   # Cyan pogrubiony
-    "key": "\033[1;36m",      # Pomarańczowy pogrubiony
+    "header": "\033[1;92m",   # Zielony pogrubiony
+    "key": "\033[1;96m",      # Cyan pogrubiony
+    "accent": "\033[1;93m",   # Żółty pogrubiony
+    "error": "\033[1;91m",    # Czerwony pogrubiony
     "reset": "\033[0m"
 }
 
 
-# Funkcja formatująca tekst wyjściowy
-def format_text(text, color="reset"):
+def format_text(text, color="reset"): # Funkcja formatująca tekst wyjściowy
     return f"{COLORS[color]}{text}{COLORS['reset']}"
 
 
@@ -63,6 +64,15 @@ def validate_netmask(mask):  # Sprawdzenie poprawności maski sieci
         raise ValueError(f"Nieprawidłowa maska sieci: {mask}")
 
 
+def convert_to_cidr(network_str): # Konwersja IP + maska dziesiętna na CIDR
+    try:
+        ip, mask = network_str.split()
+        prefixlen = validate_netmask(mask)
+        return f"{ip}/{prefixlen}"
+    except (ValueError, IndexError):
+        raise ValueError(f"Nieprawidłowa sieć lub maska: {network_str}")
+
+
 def parse_ip_and_mask(ip, mask=None): # Sprawdzenie formatu IP z obsługą klas IPv4 i adresów prywatnych
     try:
         if mask and mask.startswith("/"):  # Gdy podano CIDR po spacji
@@ -84,7 +94,7 @@ def parse_ip_and_mask(ip, mask=None): # Sprawdzenie formatu IP z obsługą klas 
                 ip_obj = ipaddress.ip_interface(f"{ip}/{mask}")
                 return ip_obj, ip_class, is_private
             else:
-                raise ValueError("Adres IPv6 wymaga prefiksu CIDR.") # Gdy podano IPv6
+                raise ValueError("Adres IPv6 wymaga prefiksu CIDR(np. 2001:db8::1/64).") # Gdy podano IPv6 bez prefiksu CIDR
 
         # Jeśli podano maskę dziesiętną, konwersja na prefiks CIDR
         prefixlen = validate_netmask(mask)
@@ -93,8 +103,12 @@ def parse_ip_and_mask(ip, mask=None): # Sprawdzenie formatu IP z obsługą klas 
         is_private = ip_obj.ip.is_private
         return ip_obj, ip_class, is_private
 
+    except ipaddress.AddressValueError as e:
+        raise ValueError(f"Nieprawidłowy adres IP: {e}")
+    except ipaddress.NetmaskValueError as e:
+        raise ValueError(f"Nieprawidłowa maska sieci: {e}")
     except ValueError as e:
-        raise ValueError(f"Błąd w przetwarzaniu adresu: {e}")
+        raise ValueError(f"Ogólny błąd: {e}")
 
 
 def check_special_address(ip_obj):  # Sprawdzenie, czy adres należy do specjalnych kategorii
@@ -149,11 +163,46 @@ def ip_info(ip_obj, ip_class, is_private):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Podręczne narzędzie sieciowe.")
-    parser.add_argument("ip",
-                        help="Adres IP w formacie CIDR (np. 192.168.1.1/24) lub adres z maską dziesiętną (np. 192.168.1.1 255.255.255.0).",
-                        nargs='+')
-    parser.add_argument("-n", "--network", help="Adres podsieci do sprawdzenia przynależności IP.")
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description=(
+            "Podręczne narzędzie sieciowe - sprawdzanie adresów IP i przynależności do sieci.\n"
+            "Użycie: <ADRES IP SPRAWDZANY> <ADRES DOCELOWY/CIDR> lub <ADRES DOCELOWY> <MASKA>"
+        ),
+        formatter_class=argparse.RawTextHelpFormatter
+    )
+
+    # Argument IP
+    parser.add_argument(
+        "ip",
+        help=(
+            "Adres IP w jednym z formatów:\n"
+            "  • CIDR:                  192.168.1.1/24\n"
+            "  • IP + maska dziesiętna: 192.168.1.1 255.255.255.0"
+        ),
+        nargs='+'
+    )
+
+    # Argument -n / --network
+    parser.add_argument(
+        "-n", "--network",
+        nargs="+",
+        metavar=("ADRES", "MASKA"),
+        help=(
+            "Sprawdź przynależność podanego adresu IP do danej sieci:\n"
+            "\n"
+            "Sieć docelową można określić za pomocą:\n"
+            "  • CIDR:               192.168.1.0/24\n"
+            "  • ADRES + MASKA:      192.168.1.0 255.255.255.0\n"
+            "\n"
+            "Przykłady użycia:\n"
+            "  python ip.py 192.168.1.100 -n 192.168.1.0/24\n"
+            "  python ip.py 192.168.1.100 -n 192.168.1.0 255.255.255.0\n"
+            "\n"
+            "Jeśli adres sieci jest nieprawidłowy, zgłoszony zostanie błąd."
+        )
+    )
 
     args = parser.parse_args()
     args.ip = [ip.strip() for ip in args.ip]
@@ -170,16 +219,37 @@ def main():
         # Sprawdzanie przynależności do sieci
         if args.network:
             try:
-                network = ipaddress.ip_network(args.network, strict=False)
-                if ip_obj.ip in network:
-                    print(f"Adres IP {ip_obj.ip} należy do sieci {network}")
-                else:
-                    print(f"Adres IP {ip_obj.ip} NIE należy do sieci {network}")
-            except ValueError:
-                print(f"Nieprawidłowa sieć: {args.network}")
+                # Przechowujemy oryginalny format wejściowy
+                original_network_format = " ".join(args.network)
 
-        # Wyświetlenie informacji
-        ip_info(ip_obj, ip_class, is_private)
+                # Obsługa CIDR lub maski dziesiętnej
+                if len(args.network) == 2:
+                    network_cidr = convert_to_cidr(original_network_format)
+                elif len(args.network) == 1:
+                    network_cidr = args.network[0]
+                else:
+                    raise ValueError(f"Nieprawidłowa sieć: {original_network_format}")
+
+                # Sprawdzenie przynależności do sieci
+                network = ipaddress.ip_network(network_cidr, strict=False)
+
+                # Wyświetlenie wyniku w oryginalnym formacie
+                if ip_obj.ip in network:
+                    print("Adres IP " +
+                          format_text(f"{ip_obj.ip} ", "accent") +
+                          format_text("należy", "header") +
+                          " do sieci " +
+                          format_text(f"{original_network_format}", "accent"))
+                else:
+                    print("Adres IP " +
+                          format_text(f"{ip_obj.ip} ", "accent") +
+                          format_text("NIE należy", "error") +
+                          " do sieci " +
+                          format_text(f"{original_network_format}", "accent"))
+            except ValueError as e:
+                print(format_text(f"Nieprawidłowa sieć: {original_network_format} ({e})", "error"))
+        else:
+            ip_info(ip_obj, ip_class, is_private)  # Wyświetlenie informacji o adresie IP
 
     except ValueError as e:
         print(f"Błąd: {e}")
