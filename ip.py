@@ -117,7 +117,7 @@ def ip_info(ip_obj):  # Wyświetlenie informacji o podanym adresie IP
 
     # Wydrukowane jako wyrównane w pionie
     for key, value in info_list:
-        print(f"{format_text(key.ljust(25), 'key')} {value}")
+        print(f"{format_text(key.ljust(27), 'key')} {value}")
 
     print(format_text("==========================================================", "header"))
 
