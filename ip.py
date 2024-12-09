@@ -67,7 +67,7 @@ def ip_info(ip_obj):  # Wyświetlenie informacji o podanym adresie IP
     ip_version = ip_obj.version
     ip_address = ip_obj.ip
     network_address = ip_obj.network.network_address
-    netmask = ip_obj.network.netmask
+    netmask = str(ip_obj.network.netmask) if ip_version == 4 else f"/{ip_obj.network.prefixlen}"
     broadcast_address = ip_obj.network.broadcast_address if ip_version == 4 else "N/A"
 
     # Obliczenie liczby hostów
@@ -82,9 +82,8 @@ def ip_info(ip_obj):  # Wyświetlenie informacji o podanym adresie IP
     # Liczba adresów w sieci
     num_addresses = ip_obj.network.num_addresses
 
-    print("Informacje o adresie IP:")
+    print(f"=== Informacje o adresie {ip_address} ===")
     print(f"Typ adresu: IPv{ip_version}")
-    print(f"Adres IP: {ip_address}")
     print(f"Adres sieci: {network_address}")
     print(f"Maska sieci: {netmask}")
     print(f"Adres rozgłoszeniowy: {broadcast_address}")
@@ -93,6 +92,7 @@ def ip_info(ip_obj):  # Wyświetlenie informacji o podanym adresie IP
     print(f"Reprezentacja binarna: {''.join(f'{int(octet):08b}' for octet in ip_address.packed)}")
     print(f"Reprezentacja szesnastkowa: {hex_representation}")
     print(f"Kategoria adresu: {check_special_address(ip_obj)}")
+    print(f"===============================")
 
 
 def main():
