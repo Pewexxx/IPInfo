@@ -84,7 +84,7 @@ def parse_ip_and_mask(ip, mask=None): # Sprawdzenie formatu IP z obsługą klas 
                 ip_obj = ipaddress.ip_interface(f"{ip}/{mask}")
                 return ip_obj, ip_class, is_private
             else:
-                raise ValueError("Adres IPv6 wymaga prefiksu CIDR.") # Gdy podano IPv6
+                raise ValueError("Adres IPv6 wymaga prefiksu CIDR(np. 2001:db8::1/64).") # Gdy podano IPv6 bez prefiksu CIDR
 
         # Jeśli podano maskę dziesiętną, konwersja na prefiks CIDR
         prefixlen = validate_netmask(mask)
@@ -93,8 +93,12 @@ def parse_ip_and_mask(ip, mask=None): # Sprawdzenie formatu IP z obsługą klas 
         is_private = ip_obj.ip.is_private
         return ip_obj, ip_class, is_private
 
+    except ipaddress.AddressValueError as e:
+        raise ValueError(f"Nieprawidłowy adres IP: {e}")
+    except ipaddress.NetmaskValueError as e:
+        raise ValueError(f"Nieprawidłowa maska sieci: {e}")
     except ValueError as e:
-        raise ValueError(f"Błąd w przetwarzaniu adresu: {e}")
+        raise ValueError(f"Ogólny błąd: {e}")
 
 
 def check_special_address(ip_obj):  # Sprawdzenie, czy adres należy do specjalnych kategorii
