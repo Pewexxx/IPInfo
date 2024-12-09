@@ -78,14 +78,14 @@ def parse_ip_and_mask(ip, mask=None):
         if mask and mask.startswith("/"):  # CIDR po spacji
             prefixlen = int(mask[1:])
             ip_obj = ipaddress.ip_interface(f"{ip}/{prefixlen}")
-            ip_class = "Brak specjalnej kategorii"
+            ip_class = "Brak"
             is_private = ip_obj.ip.is_private
             return ip_obj, ip_class, is_private
 
         if mask is None:
             if "/" in ip:  # CIDR bez spacji
                 ip_obj = ipaddress.ip_interface(ip.replace(" ", ""))
-                ip_class = "Brak specjalnej kategorii"
+                ip_class = "Brak"
                 is_private = ip_obj.ip.is_private
                 return ip_obj, ip_class, is_private
             elif ":" not in ip:  # IPv4 bez maski
@@ -98,7 +98,7 @@ def parse_ip_and_mask(ip, mask=None):
         # Obsługa maski dziesiętnej
         prefixlen = validate_netmask(mask)
         ip_obj = ipaddress.ip_interface(f"{ip}/{prefixlen}")
-        ip_class = "Brak specjalnej kategorii"
+        ip_class = "Brak"
         is_private = ip_obj.ip.is_private
         return ip_obj, ip_class, is_private
 
