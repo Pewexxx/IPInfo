@@ -1,4 +1,3 @@
-# test_cli.py - Testy automatyczne dla ip.py przy użyciu pytest
 import pytest
 import sys
 from unittest.mock import patch

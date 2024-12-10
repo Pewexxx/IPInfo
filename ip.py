@@ -75,7 +75,7 @@ def convert_to_cidr(network_str): # Konwersja IP + maska dziesiętna na CIDR
 
 def parse_ip_and_mask(ip, mask=None):
     try:
-        if mask and mask.startswith("/"):  # CIDR po spacji
+        if mask and mask.startswith("/"):
             prefixlen = int(mask[1:])
             ip_obj = ipaddress.ip_interface(f"{ip}/{prefixlen}")
             ip_class = "Brak"
@@ -83,29 +83,52 @@ def parse_ip_and_mask(ip, mask=None):
             return ip_obj, ip_class, is_private
 
         if mask is None:
-            if "/" in ip:  # CIDR bez spacji
-                ip_obj = ipaddress.ip_interface(ip.replace(" ", ""))
+            if "/" in ip:  # IPv4 z CIDR
+                ip_obj = ipaddress.ip_interface(ip.strip())
                 ip_class = "Brak"
                 is_private = ip_obj.ip.is_private
                 return ip_obj, ip_class, is_private
-            elif ":" not in ip:  # IPv4 bez maski
-                mask, ip_class, is_private = get_classful_mask(ip)
-                ip_obj = ipaddress.ip_interface(f"{ip}/{mask}")
-                return ip_obj, ip_class, is_private
-            else:
-                raise ValueError("Adres IPv6 wymaga prefiksu CIDR(np. 2001:db8::1/64).")
 
-        # Obsługa maski dziesiętnej
+            if ":" in ip:  # Adres IPv6
+                ip_obj = ipaddress.ip_interface(f"{ip}/64")
+                ip_class = "Brak"
+                is_private = ip_obj.ip.is_private
+                return ip_obj, ip_class, is_private
+
+            if ipaddress.IPv4Address(ip).is_multicast:
+                ip_obj = ipaddress.ip_interface(f"{ip}/32")
+                ip_class = "Brak"
+                is_private = ip_obj.ip.is_private
+                return ip_obj, ip_class, is_private
+
+            #Podejście klasowe (domyślnie)
+            first_octet = int(ip.split('.')[0])
+            if 1 <= first_octet <= 127:
+                ip_obj = ipaddress.ip_interface(f"{ip}/8")
+                ip_class = "Klasa A"
+            elif 128 <= first_octet <= 191:
+                ip_obj = ipaddress.ip_interface(f"{ip}/16")
+                ip_class = "Klasa B"
+            elif 192 <= first_octet <= 223:
+                ip_obj = ipaddress.ip_interface(f"{ip}/24")
+                ip_class = "Klasa C"
+            else:
+                raise ValueError(f"Nieprawidłowy adres IP: {ip}")
+
+            is_private = ip_obj.ip.is_private
+            return ip_obj, ip_class, is_private
+
+        # Decimal netmask handling
         prefixlen = validate_netmask(mask)
         ip_obj = ipaddress.ip_interface(f"{ip}/{prefixlen}")
         ip_class = "Brak"
         is_private = ip_obj.ip.is_private
         return ip_obj, ip_class, is_private
 
-    except ipaddress.AddressValueError as e:
-        raise ValueError(f"Nieprawidłowy adres IP: {e}")
-    except ipaddress.NetmaskValueError as e:
-        raise ValueError(f"Nieprawidłowa maska sieci: {e}")
+    except ipaddress.AddressValueError:
+        raise ValueError(f"Nieprawidłowy adres IP: {ip}")
+    except ipaddress.NetmaskValueError:
+        raise ValueError(f"Nieprawidłowa maska sieci: {mask}")
     except ValueError as e:
         raise ValueError(f"Ogólny błąd: {e}")
 
