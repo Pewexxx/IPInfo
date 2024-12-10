@@ -1,5 +1,11 @@
 import ipaddress
 import argparse
+import sys
+import locale
+
+
+sys.stdout.reconfigure(encoding='utf-8')
+
 
 # Predefiniowane sieci specjalne
 special_networks = [
