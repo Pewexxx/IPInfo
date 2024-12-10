@@ -6,6 +6,7 @@ import pytest
 def run_command(command, description):
      result = subprocess.run(command, text=True)
 
+
 @pytest.mark.order(1)
 def test_unittest():
     python_exec = sys.executable
